@@ -26,13 +26,7 @@
 			<version>${project.version}</version>
 			<type>jar</type>
 		</dependency>
-		<!-- Add the dependency to the native libraries of rxtx -->
-		<dependency>
-			<groupId>org.rxtx</groupId>
-			<artifactId>rxtx-native</artifactId>
-			<version>${rxtx.version}</version>
-		</dependency>
-		<!-- Add the rest of SLF4J bindings to be included in the distribution 
+		<!-- Add the rest of SLF4J bindings to be included in the distribution
 		deliverable -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
