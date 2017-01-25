@@ -12,8 +12,10 @@ also available in source code format.
 
 The main features of the library include:
 
-* Support for ZigBee, 802.15.4, DigiMesh and Point-to-Multipoint XBee devices.
+* Support for ZigBee, 802.15.4, DigiMesh, Point-to-Multipoint, Wi-Fi and 
+Cellular XBee devices.
 * Support for API and API escaped operating modes.
+* Support for Android.
 * Management of local (attached to the PC) and remote XBee device objects.
 * Discovery of remote XBee devices associated with the same network as the 
 local device.
@@ -29,6 +31,7 @@ device.
 * Reception of data from remote XBee devices:
   * Data polling.
   * Data reception callback.
+* Transmission and reception of IP and SMS messages.
 * Reception of network status changes related to the local XBee device.
 * IO lines management:
   * Configure IO lines.
@@ -42,7 +45,7 @@ Destination endpoint, Profile ID, and Cluster ID).
 Start Here
 ----------
 The best place to get started is the 
-[XBee Java Library documentation](http://docs.digi.com/display/XBJLIB).
+[XBee Java Library documentation](http://www.digi.com/resources/documentation/digidocs/90001438/Default.htm).
 
 
 How to Contribute
@@ -54,11 +57,19 @@ document.
 
 License
 -------
-This software is open-source software. Copyright Digi International, 2014-2016. 
+Copyright 2017, Digi International Inc.
 
 This Source Code Form is subject to the terms of the Mozilla Public
-License, v. 2.0. If a copy of the MPL was not distributed with this file,
-you can obtain one at http://mozilla.org/MPL/2.0/.
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ 
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES 
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF 
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR 
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES 
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN 
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF 
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ### Licensing terms for RXTX
 
