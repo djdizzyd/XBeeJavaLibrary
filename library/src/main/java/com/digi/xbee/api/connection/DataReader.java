@@ -578,7 +578,10 @@ public class DataReader extends Thread {
 			ReceivePacket receivePacket = (ReceivePacket)apiPacket;
 			addr64 = receivePacket.get64bitSourceAddress();
 			addr16 = receivePacket.get16bitSourceAddress();
-			remoteDevice = network.getDevice(addr64);
+			if (!addr64.equals(XBee64BitAddress.UNKNOWN_ADDRESS))
+				remoteDevice = network.getDevice(addr64);
+			else if (!addr16.equals(XBee16BitAddress.UNKNOWN_ADDRESS))
+				remoteDevice = network.getDevice(addr16);
 			break;
 		case RX_64:
 			RX64Packet rx64Packet = (RX64Packet)apiPacket;
@@ -623,7 +626,8 @@ public class DataReader extends Thread {
 		// If the origin is not in the network, add it.
 		if (remoteDevice == null) {
 			remoteDevice = createRemoteXBeeDevice(addr64, addr16, null);
-			network.addRemoteDevice(remoteDevice);
+			if (!addr64.equals(XBee64BitAddress.UNKNOWN_ADDRESS) || !addr16.equals(XBee16BitAddress.UNKNOWN_ADDRESS))
+				network.addRemoteDevice(remoteDevice);
 		}
 		
 		return remoteDevice;
@@ -699,7 +703,7 @@ public class DataReader extends Thread {
 					executor.execute(new Runnable() {
 						/*
 						 * (non-Javadoc)
-						 * @see java.lang.Runnable#run()
+ 						 * @see java.lang.Runnable#run()
 						 */
 						@Override
 						public void run() {
