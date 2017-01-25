@@ -92,33 +92,6 @@
 					</execution>
 				</executions>
 			</plugin>
-			<!-- Unpack the RXTX dependency -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-dependency-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>unpack</id>
-						<phase>compile</phase>
-						<goals>
-							<goal>unpack</goal>
-						</goals>
-						<configuration>
-							<artifactItems>
-								<artifactItem>
-									<groupId>org.rxtx</groupId>
-									<artifactId>rxtx-native</artifactId>
-									<version>${rxtx.version}</version>
-									<classifier>${build.type}</classifier>
-									<type>jar</type>
-									<overWrite>true</overWrite>
-									<outputDirectory>${project.build.directory}/../${rxtx.native.libs.dir}</outputDirectory>
-								</artifactItem>
-							</artifactItems>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
 		</plugins>
 	</build>
 </project>
