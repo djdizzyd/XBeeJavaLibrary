@@ -615,7 +615,10 @@ public class DataReader extends Thread {
 			ExplicitRxIndicatorPacket explicitDataPacket = (ExplicitRxIndicatorPacket)apiPacket;
 			addr64 = explicitDataPacket.get64BitSourceAddress();
 			addr16 = explicitDataPacket.get16BitSourceAddress();
-			remoteDevice = network.getDevice(addr64);
+			if (!addr64.equals(XBee64BitAddress.UNKNOWN_ADDRESS))
+				remoteDevice = network.getDevice(addr64);
+			else if (!addr16.equals(XBee16BitAddress.UNKNOWN_ADDRESS))
+				remoteDevice = network.getDevice(addr16);
 			break;
 		default:
 			// Rest of the types are considered not to contain information 
