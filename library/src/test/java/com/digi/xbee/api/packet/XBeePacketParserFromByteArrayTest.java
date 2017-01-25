@@ -1,13 +1,17 @@
 /**
- * Copyright (c) 2014-2016 Digi International Inc.,
- * All rights not expressly granted are reserved.
+ * Copyright 2017, Digi International Inc.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this file,
- * You can obtain one at http://mozilla.org/MPL/2.0/.
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Digi International Inc. 11001 Bren Road East, Minnetonka, MN 55343
- * =======================================================================
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES 
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF 
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR 
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES 
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN 
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF 
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 package com.digi.xbee.api.packet;
 
@@ -15,7 +19,6 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
-
 import static org.junit.Assert.assertThat;
 
 import org.junit.After;
@@ -29,6 +32,8 @@ import org.junit.rules.ExpectedException;
 import com.digi.xbee.api.exceptions.InvalidPacketException;
 import com.digi.xbee.api.models.OperatingMode;
 import com.digi.xbee.api.models.SpecialByte;
+import com.digi.xbee.api.packet.cellular.RXSMSPacket;
+import com.digi.xbee.api.packet.cellular.TXSMSPacket;
 import com.digi.xbee.api.packet.common.ATCommandPacket;
 import com.digi.xbee.api.packet.common.ATCommandQueuePacket;
 import com.digi.xbee.api.packet.common.ATCommandResponsePacket;
@@ -41,6 +46,14 @@ import com.digi.xbee.api.packet.common.RemoteATCommandPacket;
 import com.digi.xbee.api.packet.common.RemoteATCommandResponsePacket;
 import com.digi.xbee.api.packet.common.TransmitPacket;
 import com.digi.xbee.api.packet.common.TransmitStatusPacket;
+import com.digi.xbee.api.packet.devicecloud.DeviceRequestPacket;
+import com.digi.xbee.api.packet.devicecloud.DeviceResponsePacket;
+import com.digi.xbee.api.packet.devicecloud.DeviceResponseStatusPacket;
+import com.digi.xbee.api.packet.devicecloud.FrameErrorPacket;
+import com.digi.xbee.api.packet.devicecloud.SendDataRequestPacket;
+import com.digi.xbee.api.packet.devicecloud.SendDataResponsePacket;
+import com.digi.xbee.api.packet.ip.RXIPv4Packet;
+import com.digi.xbee.api.packet.ip.TXIPv4Packet;
 import com.digi.xbee.api.packet.raw.RX16IOPacket;
 import com.digi.xbee.api.packet.raw.RX16Packet;
 import com.digi.xbee.api.packet.raw.RX64IOPacket;
@@ -48,6 +61,9 @@ import com.digi.xbee.api.packet.raw.RX64Packet;
 import com.digi.xbee.api.packet.raw.TX16Packet;
 import com.digi.xbee.api.packet.raw.TX64Packet;
 import com.digi.xbee.api.packet.raw.TXStatusPacket;
+import com.digi.xbee.api.packet.wifi.IODataSampleRxIndicatorWifiPacket;
+import com.digi.xbee.api.packet.wifi.RemoteATCommandResponseWifiPacket;
+import com.digi.xbee.api.packet.wifi.RemoteATCommandWifiPacket;
 import com.digi.xbee.api.utils.ByteUtils;
 import com.digi.xbee.api.utils.HexUtils;
 
@@ -949,6 +965,40 @@ public class XBeePacketParserFromByteArrayTest {
 	/**
 	 * Test method for {@link com.digi.xbee.api.packet.XBeePacketParser#parsePacket(byte[], OperatingMode)}.
 	 * 
+	 * <p>A valid Remote AT Command (Wi-Fi) API byte array must result in a 
+	 * valid API packet of the right type.</p>
+	 * 
+	 * @throws InvalidPacketException 
+	 */
+	@Test
+	public final void testParsePacketRemoteATCommandWifiFrame() throws InvalidPacketException {
+		// Setup the resources for the test.
+		byte[] byteData = {(byte)APIFrameType.REMOTE_AT_COMMAND_REQUEST_WIFI.getValue(), 
+				0x01, 0x00, 0x00, 0x00, 0x00, (byte) 0xC0, (byte) 0xA8, 0x01, 0x02, 0x02, 0x4E, 0x49};
+		byte[] byteArray = new byte[byteData.length + 4];
+		byteArray[0] = 0x7E;
+		byteArray[1] = 0x00;
+		byteArray[2] = 0x0D;
+		System.arraycopy(byteData, 0, byteArray, 3, byteData.length);
+		// Checksum.
+		byteArray[byteArray.length - 1] = (byte)0xF3;
+		// Real package: {7E 00 0D 07 01 00 00 00 00 C0 A8 01 02 02 4E 49 F3};
+		
+		// Call the method under test.
+		XBeePacket packet = packetParser.parsePacket(byteArray, OperatingMode.API);
+		
+		// Verify the result.
+		assertThat("Packet must be a Remote AT Command (Wi-Fi) packet", packet, is(instanceOf(RemoteATCommandWifiPacket.class)));
+		assertThat("Returned length is not the expected one", packet.getPacketLength(), is(equalTo(byteData.length)));
+		// Do not use this since the data is always API and never API_ESCAPE.
+		//assertThat("Returned data array is not the expected one", packet.getPacketData(), is(equalTo(byteData)));
+		
+		assertThat("Generated API array from packet is not the expected one", packet.generateByteArray(), is(equalTo(byteArray)));
+	}
+	
+	/**
+	 * Test method for {@link com.digi.xbee.api.packet.XBeePacketParser#parsePacket(byte[], OperatingMode)}.
+	 * 
 	 * <p>A valid AT Command API byte array must result in a valid API packet 
 	 * of the right type.</p>
 	 * 
@@ -1120,6 +1170,144 @@ public class XBeePacketParserFromByteArrayTest {
 	/**
 	 * Test method for {@link com.digi.xbee.api.packet.XBeePacketParser#parsePacket(byte[], OperatingMode)}.
 	 * 
+	 * <p>A valid TX SMS API byte array must result in a valid API packet 
+	 * of the right type.</p>
+	 * 
+	 * @throws InvalidPacketException 
+	 */
+	@Test
+	public final void testParsePacketTXSMSFrame() throws InvalidPacketException {
+		// Setup the resources for the test.
+		byte[] byteData = {(byte)APIFrameType.TX_SMS.getValue(), 0x01, 
+				0x00, 0x2B, 0x33, 0x34, 0x36, 0x35, 0x35, 0x35, 0x35, 0x35, 0x32, 0x32, 
+				0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x69, 0x21};
+		byte[] byteArray = new byte[byteData.length + 4];
+		byteArray[0] = 0x7E;
+		byteArray[1] = 0x00;
+		byteArray[2] = 0x1A;
+		System.arraycopy(byteData, 0, byteArray, 3, byteData.length);
+		// Checksum.
+		byteArray[byteArray.length - 1] = (byte)0xA6;
+		// Real package: {7E 00 1A 1F 01 00 2B 33 34 36 35 35 35 35 35 32 32 32 00 00 00 00 00 00 00 00 48 69 21 A6};
+		
+		// Call the method under test.
+		XBeePacket packet = packetParser.parsePacket(byteArray, OperatingMode.API);
+		
+		// Verify the result.
+		assertThat("Packet must be a TX SMS packet", packet, is(instanceOf(TXSMSPacket.class)));
+		assertThat("Returned length is not the expected one", packet.getPacketLength(), is(equalTo(byteData.length)));
+		// Do not use this since the data is always API and never API_ESCAPE.
+		//assertThat("Returned data array is not the expected one", packet.getPacketData(), is(equalTo(byteData)));
+		
+		assertThat("Generated API array from packet is not the expected one", packet.generateByteArray(), is(equalTo(byteArray)));
+	}
+	
+	/**
+	 * Test method for {@link com.digi.xbee.api.packet.XBeePacketParser#parsePacket(byte[], OperatingMode)}.
+	 * 
+	 * <p>A valid TX IPv4 API byte array must result in a valid API packet 
+	 * of the right type.</p>
+	 * 
+	 * @throws InvalidPacketException 
+	 */
+	@Test
+	public final void testParsePacketTXIPv4Frame() throws InvalidPacketException {
+		// Setup the resources for the test.
+		byte[] byteData = {(byte)APIFrameType.TX_IPV4.getValue(), 0x01, 0x10, 0x60, 0x01, 
+				0x01, 0x12, 0x34, (byte) 0x88, (byte) 0xDB, 0x00, 0x00, 0x48, 0x65, 0x79};
+		byte[] byteArray = new byte[byteData.length + 4];
+		byteArray[0] = 0x7E;
+		byteArray[1] = 0x00;
+		byteArray[2] = 0x0F;
+		System.arraycopy(byteData, 0, byteArray, 3, byteData.length);
+		// Checksum.
+		byteArray[byteArray.length - 1] = (byte)0x9D;
+		// Real package: {7E 00 0F 20 01 10 60 01 01 12 34 88 DB 00 00 48 65 79 9D};
+		
+		// Call the method under test.
+		XBeePacket packet = packetParser.parsePacket(byteArray, OperatingMode.API);
+		
+		// Verify the result.
+		assertThat("Packet must be a TX IPv4 packet", packet, is(instanceOf(TXIPv4Packet.class)));
+		assertThat("Returned length is not the expected one", packet.getPacketLength(), is(equalTo(byteData.length)));
+		// Do not use this since the data is always API and never API_ESCAPE.
+		//assertThat("Returned data array is not the expected one", packet.getPacketData(), is(equalTo(byteData)));
+		
+		assertThat("Generated API array from packet is not the expected one", packet.generateByteArray(), is(equalTo(byteArray)));
+	}
+	
+	/**
+	 * Test method for {@link com.digi.xbee.api.packet.XBeePacketParser#parsePacket(byte[], OperatingMode)}.
+	 * 
+	 * <p>A valid Send Data Request API byte array must result in a valid API 
+	 * packet of the right type.</p>
+	 * 
+	 * @throws InvalidPacketException 
+	 */
+	@Test
+	public final void testParsePacketSendDataRequestFrame() throws InvalidPacketException {
+		// Setup the resources for the test.
+		byte[] byteData = {(byte)APIFrameType.SEND_DATA_REQUEST.getValue(), 
+				0x01, 0x08, 0x74, 0x65, 0x73, 0x74, 0x2E, 0x74, 0x78, 0x74, 0x0A, 0x74, 0x65, 0x78, 
+				0x74, 0x2F, 0x70, 0x6C, 0x61, 0x69, 0x6E, 0x00, 0x00, 0x54, 0x65, 0x73, 0x74};
+		byte[] byteArray = new byte[byteData.length + 4];
+		byteArray[0] = 0x7E;
+		byteArray[1] = 0x00;
+		byteArray[2] = 0x1C;
+		System.arraycopy(byteData, 0, byteArray, 3, byteData.length);
+		// Checksum.
+		byteArray[byteArray.length - 1] = (byte)0xCE;
+		// Real package: {7E 00 1C 28 01 08 74 65 73 74 2E 74 78 74 0A 74 65 78 74 2F 70 6C 61 69 6E 00 00 54 65 73 74 CE};
+		
+		// Call the method under test.
+		XBeePacket packet = packetParser.parsePacket(byteArray, OperatingMode.API);
+		
+		// Verify the result.
+		assertThat("Packet must be a Send Data Request packet", packet, is(instanceOf(SendDataRequestPacket.class)));
+		assertThat("Returned length is not the expected one", packet.getPacketLength(), is(equalTo(byteData.length)));
+		// Do not use this since the data is always API and never API_ESCAPE.
+		//assertThat("Returned data array is not the expected one", packet.getPacketData(), is(equalTo(byteData)));
+		
+		assertThat("Generated API array from packet is not the expected one", packet.generateByteArray(), is(equalTo(byteArray)));
+	}
+	
+	/**
+	 * Test method for {@link com.digi.xbee.api.packet.XBeePacketParser#parsePacket(byte[], OperatingMode)}.
+	 * 
+	 * <p>A valid Device Response API byte array must result in a valid API 
+	 * packet of the right type.</p>
+	 * 
+	 * @throws InvalidPacketException 
+	 */
+	@Test
+	public final void testParsePacketDeviceResponseFrame() throws InvalidPacketException {
+		// Setup the resources for the test.
+		byte[] byteData = {(byte)APIFrameType.DEVICE_RESPONSE.getValue(), 
+				0x01, 0x05, 0x00, 0x4F, 0x4B};
+		byte[] byteArray = new byte[byteData.length + 4];
+		byteArray[0] = 0x7E;
+		byteArray[1] = 0x00;
+		byteArray[2] = 0x06;
+		System.arraycopy(byteData, 0, byteArray, 3, byteData.length);
+		// Checksum.
+		byteArray[byteArray.length - 1] = (byte)0x35;
+		// Real package: {7E 00 06 2A 01 05 00 4F 4B 35};
+		
+		// Call the method under test.
+		XBeePacket packet = packetParser.parsePacket(byteArray, OperatingMode.API);
+		
+		// Verify the result.
+		assertThat("Packet must be a Device Response packet", packet, is(instanceOf(DeviceResponsePacket.class)));
+		assertThat("Returned length is not the expected one", packet.getPacketLength(), is(equalTo(byteData.length)));
+		// Do not use this since the data is always API and never API_ESCAPE.
+		//assertThat("Returned data array is not the expected one", packet.getPacketData(), is(equalTo(byteData)));
+		
+		assertThat("Generated API array from packet is not the expected one", packet.generateByteArray(), is(equalTo(byteArray)));
+	}
+	
+	/**
+	 * Test method for {@link com.digi.xbee.api.packet.XBeePacketParser#parsePacket(byte[], OperatingMode)}.
+	 * 
 	 * <p>A valid Rx (Receive) 64-bit API byte array must result in a valid API packet 
 	 * of the right type.</p>
 	 * 
@@ -1246,6 +1434,41 @@ public class XBeePacketParserFromByteArrayTest {
 		
 		// Verify the result.
 		assertThat("Packet must be an IO Data Sample Rx 16-bit packet", packet, is(instanceOf(RX16IOPacket.class)));
+		assertThat("Returned length is not the expected one", packet.getPacketLength(), is(equalTo(byteData.length)));
+		// Do not use this since the data is always API and never API_ESCAPE.
+		//assertThat("Returned data array is not the expected one", packet.getPacketData(), is(equalTo(byteData)));
+		
+		assertThat("Generated API array from packet is not the expected one", packet.generateByteArray(), is(equalTo(byteArray)));
+	}
+	
+	/**
+	 * Test method for {@link com.digi.xbee.api.packet.XBeePacketParser#parsePacket(byte[], OperatingMode)}.
+	 * 
+	 * <p>A valid Remote AT Command Response (Wi-Fi) API byte array must result 
+	 * in a valid API packet of the right type.</p>
+	 * 
+	 * @throws InvalidPacketException 
+	 */
+	@Test
+	public final void testParsePacketRemoteATCommandResponseWifiFrame() throws InvalidPacketException {
+		// Setup the resources for the test.
+		byte[] byteData = {(byte)APIFrameType.REMOTE_AT_COMMAND_RESPONSE_WIFI.getValue(), 
+				0x01, 0x00, 0x00, 0x00, 0x00, (byte) 0xC0, (byte) 0xA8, 0x01, 0x02, 0x4E, 
+				0x49, 0x00, 0x58, 0x42, 0x65, 0x65};
+		byte[] byteArray = new byte[byteData.length + 4];
+		byteArray[0] = 0x7E;
+		byteArray[1] = 0x00;
+		byteArray[2] = 0x11;
+		System.arraycopy(byteData, 0, byteArray, 3, byteData.length);
+		// Checksum.
+		byteArray[byteArray.length - 1] = 0x11;
+		// Real package: {7E 00 11 87 01 00 00 00 00 C0 A8 01 02 4E 49 00 58 42 65 65 11};
+		
+		// Call the method under test.
+		XBeePacket packet = packetParser.parsePacket(byteArray, OperatingMode.API);
+		
+		// Verify the result.
+		assertThat("Packet must be a Remote AT Command Response (Wi-Fi) packet", packet, is(instanceOf(RemoteATCommandResponseWifiPacket.class)));
 		assertThat("Returned length is not the expected one", packet.getPacketLength(), is(equalTo(byteData.length)));
 		// Do not use this since the data is always API and never API_ESCAPE.
 		//assertThat("Returned data array is not the expected one", packet.getPacketData(), is(equalTo(byteData)));
@@ -1392,6 +1615,41 @@ public class XBeePacketParserFromByteArrayTest {
 	/**
 	 * Test method for {@link com.digi.xbee.api.packet.XBeePacketParser#parsePacket(byte[], OperatingMode)}.
 	 * 
+	 * <p>A valid IO Data Sample Rx Indicator (Wi-Fi) API byte array must result
+	 * in a valid API packet of the right type.</p>
+	 * 
+	 * @throws InvalidPacketException 
+	 */
+	@Test
+	public final void testParsePacketIODataSampleRxIndicatorWifiFrame() throws InvalidPacketException {
+		// Setup the resources for the test.
+		byte[] byteData = {(byte)APIFrameType.IO_DATA_SAMPLE_RX_INDICATOR_WIFI.getValue(), 
+				0x00, 0x00, 0x00, 0x00, (byte) 0xC0, (byte) 0xA8, 0x01, 0x02, (byte) 0xD1, 
+				0x00, 0x01, 0x00, 0x01, 0x02, 0x00, (byte) 0xC0, 0x12, 0x50};
+		byte[] byteArray = new byte[byteData.length + 4];
+		byteArray[0] = 0x7E;
+		byteArray[1] = 0x00;
+		byteArray[2] = 0x13;
+		System.arraycopy(byteData, 0, byteArray, 3, byteData.length);
+		// Checksum.
+		byteArray[byteArray.length - 1] = 0x0E;
+		// Real package: {7E 00 13 8F 00 00 00 00 C0 A8 01 02 D1 00 01 00 01 02 00 C0 12 50 0E};
+		
+		// Call the method under test.
+		XBeePacket packet = packetParser.parsePacket(byteArray, OperatingMode.API);
+		
+		// Verify the result.
+		assertThat("Packet must be an IO Data Sample Rx Indicator (Wi-Fi) packet", packet, is(instanceOf(IODataSampleRxIndicatorWifiPacket.class)));
+		assertThat("Returned length is not the expected one", packet.getPacketLength(), is(equalTo(byteData.length)));
+		// Do not use this since the data is always API and never API_ESCAPE.
+		//assertThat("Returned data array is not the expected one", packet.getPacketData(), is(equalTo(byteData)));
+		
+		assertThat("Generated API array from packet is not the expected one", packet.generateByteArray(), is(equalTo(byteArray)));
+	}
+	
+	/**
+	 * Test method for {@link com.digi.xbee.api.packet.XBeePacketParser#parsePacket(byte[], OperatingMode)}.
+	 * 
 	 * <p>A valid Receive Packet API byte array must result in a valid 
 	 * API packet of the right type.</p>
 	 * 
@@ -1519,6 +1777,208 @@ public class XBeePacketParserFromByteArrayTest {
 		
 		// Verify the result.
 		assertThat("Packet must be a Remote AT Command Response packet", packet, is(instanceOf(RemoteATCommandResponsePacket.class)));
+		assertThat("Returned length is not the expected one", packet.getPacketLength(), is(equalTo(byteData.length)));
+		// Do not use this since the data is always API and never API_ESCAPE.
+		//assertThat("Returned data array is not the expected one", packet.getPacketData(), is(equalTo(byteData)));
+		
+		assertThat("Generated API array from packet is not the expected one", packet.generateByteArray(), is(equalTo(byteArray)));
+	}
+	
+	/**
+	 * Test method for {@link com.digi.xbee.api.packet.XBeePacketParser#parsePacket(byte[], OperatingMode)}.
+	 * 
+	 * <p>A valid RX SMS API byte array must result in a valid API packet 
+	 * of the right type.</p>
+	 * 
+	 * @throws InvalidPacketException 
+	 */
+	@Test
+	public final void testParsePacketRXSMSFrame() throws InvalidPacketException {
+		// Setup the resources for the test.
+		byte[] byteData = {(byte)APIFrameType.RX_SMS.getValue(), 0x35, 0x35, 0x35, 0x32, 0x33, 0x30, 
+				0x32, 0x33, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+				0x52, 0x65, 0x73, 0x70, 0x6F, 0x6E, 0x73, 0x65};
+		byte[] byteArray = new byte[byteData.length + 4];
+		byteArray[0] = 0x7E;
+		byteArray[1] = 0x00;
+		byteArray[2] = 0x1D;
+		System.arraycopy(byteData, 0, byteArray, 3, byteData.length);
+		// Checksum.
+		byteArray[byteArray.length - 1] = (byte)0x42;
+		// Real package: {7E 00 1D 9F 35 35 35 32 33 30 32 33 36 00 00 00 00 00 00 00 00 00 00 00 52 65 73 70 6F 6E 73 65 42};
+		
+		// Call the method under test.
+		XBeePacket packet = packetParser.parsePacket(byteArray, OperatingMode.API);
+		
+		// Verify the result.
+		assertThat("Packet must be a RX SMS packet", packet, is(instanceOf(RXSMSPacket.class)));
+		assertThat("Returned length is not the expected one", packet.getPacketLength(), is(equalTo(byteData.length)));
+		// Do not use this since the data is always API and never API_ESCAPE.
+		//assertThat("Returned data array is not the expected one", packet.getPacketData(), is(equalTo(byteData)));
+		
+		assertThat("Generated API array from packet is not the expected one", packet.generateByteArray(), is(equalTo(byteArray)));
+	}
+	
+	/**
+	 * Test method for {@link com.digi.xbee.api.packet.XBeePacketParser#parsePacket(byte[], OperatingMode)}.
+	 * 
+	 * <p>A valid RX IPv4 API byte array must result in a valid API packet 
+	 * of the right type.</p>
+	 * 
+	 * @throws InvalidPacketException 
+	 */
+	@Test
+	public final void testParsePacketRXIPv4Frame() throws InvalidPacketException {
+		// Setup the resources for the test.
+		byte[] byteData = {(byte)APIFrameType.RX_IPV4.getValue(), 0x10, 0x60, 0x01, 0x01, 0x55, 
+				0x00, (byte) 0xAB, (byte) 0xCD, 0x01, 0x00, 0x48, 0x69};
+		byte[] byteArray = new byte[byteData.length + 4];
+		byteArray[0] = 0x7E;
+		byteArray[1] = 0x00;
+		byteArray[2] = 0x0D;
+		System.arraycopy(byteData, 0, byteArray, 3, byteData.length);
+		// Checksum.
+		byteArray[byteArray.length - 1] = (byte)0x5E;
+		// Real package: {7E 00 0D B0 10 60 01 01 55 00 AB CD 01 00 48 69 5E};
+		
+		// Call the method under test.
+		XBeePacket packet = packetParser.parsePacket(byteArray, OperatingMode.API);
+		
+		// Verify the result.
+		assertThat("Packet must be a RX IPv4 packet", packet, is(instanceOf(RXIPv4Packet.class)));
+		assertThat("Returned length is not the expected one", packet.getPacketLength(), is(equalTo(byteData.length)));
+		// Do not use this since the data is always API and never API_ESCAPE.
+		//assertThat("Returned data array is not the expected one", packet.getPacketData(), is(equalTo(byteData)));
+		
+		assertThat("Generated API array from packet is not the expected one", packet.generateByteArray(), is(equalTo(byteArray)));
+	}
+	
+	/**
+	 * Test method for {@link com.digi.xbee.api.packet.XBeePacketParser#parsePacket(byte[], OperatingMode)}.
+	 * 
+	 * <p>A valid Send Data Response API byte array must result in a valid API
+	 * packet of the right type.</p>
+	 * 
+	 * @throws InvalidPacketException 
+	 */
+	@Test
+	public final void testParsePacketSendDataResponseFrame() throws InvalidPacketException {
+		// Setup the resources for the test.
+		byte[] byteData = {(byte)APIFrameType.SEND_DATA_RESPONSE.getValue(), 0x02, 0x00};
+		byte[] byteArray = new byte[byteData.length + 4];
+		byteArray[0] = 0x7E;
+		byteArray[1] = 0x00;
+		byteArray[2] = 0x03;
+		System.arraycopy(byteData, 0, byteArray, 3, byteData.length);
+		// Checksum.
+		byteArray[byteArray.length - 1] = (byte)0x45;
+		// Real package: {7E 00 03 B8 02 00 45};
+		
+		// Call the method under test.
+		XBeePacket packet = packetParser.parsePacket(byteArray, OperatingMode.API);
+		
+		// Verify the result.
+		assertThat("Packet must be a Send Data Response packet", packet, is(instanceOf(SendDataResponsePacket.class)));
+		assertThat("Returned length is not the expected one", packet.getPacketLength(), is(equalTo(byteData.length)));
+		// Do not use this since the data is always API and never API_ESCAPE.
+		//assertThat("Returned data array is not the expected one", packet.getPacketData(), is(equalTo(byteData)));
+		
+		assertThat("Generated API array from packet is not the expected one", packet.generateByteArray(), is(equalTo(byteArray)));
+	}
+	
+	/**
+	 * Test method for {@link com.digi.xbee.api.packet.XBeePacketParser#parsePacket(byte[], OperatingMode)}.
+	 * 
+	 * <p>A valid Device Request API byte array must result in a valid API
+	 * packet of the right type.</p>
+	 * 
+	 * @throws InvalidPacketException 
+	 */
+	@Test
+	public final void testParsePacketDeviceRequestFrame() throws InvalidPacketException {
+		// Setup the resources for the test.
+		byte[] byteData = {(byte)APIFrameType.DEVICE_REQUEST.getValue(), 
+				0x01, 0x00, 0x00, 0x06, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x48, 0x65, 0x79};
+		byte[] byteArray = new byte[byteData.length + 4];
+		byteArray[0] = 0x7E;
+		byteArray[1] = 0x00;
+		byteArray[2] = 0x0E;
+		System.arraycopy(byteData, 0, byteArray, 3, byteData.length);
+		// Checksum.
+		byteArray[byteArray.length - 1] = (byte)0x92;
+		// Real package: {7E 00 0E B9 01 00 00 06 74 61 72 67 65 74 48 65 79 92};
+		
+		// Call the method under test.
+		XBeePacket packet = packetParser.parsePacket(byteArray, OperatingMode.API);
+		
+		// Verify the result.
+		assertThat("Packet must be a Device Request packet", packet, is(instanceOf(DeviceRequestPacket.class)));
+		assertThat("Returned length is not the expected one", packet.getPacketLength(), is(equalTo(byteData.length)));
+		// Do not use this since the data is always API and never API_ESCAPE.
+		//assertThat("Returned data array is not the expected one", packet.getPacketData(), is(equalTo(byteData)));
+		
+		assertThat("Generated API array from packet is not the expected one", packet.generateByteArray(), is(equalTo(byteArray)));
+	}
+	
+	/**
+	 * Test method for {@link com.digi.xbee.api.packet.XBeePacketParser#parsePacket(byte[], OperatingMode)}.
+	 * 
+	 * <p>A valid Device Response Status API byte array must result in a valid
+	 * API packet of the right type.</p>
+	 * 
+	 * @throws InvalidPacketException 
+	 */
+	@Test
+	public final void testParsePacketDeviceResponseStatusFrame() throws InvalidPacketException {
+		// Setup the resources for the test.
+		byte[] byteData = {(byte)APIFrameType.DEVICE_RESPONSE_STATUS.getValue(), 0x02, 0x20};
+		byte[] byteArray = new byte[byteData.length + 4];
+		byteArray[0] = 0x7E;
+		byteArray[1] = 0x00;
+		byteArray[2] = 0x03;
+		System.arraycopy(byteData, 0, byteArray, 3, byteData.length);
+		// Checksum.
+		byteArray[byteArray.length - 1] = (byte)0x23;
+		// Real package: {7E 00 03 BA 02 20 23};
+		
+		// Call the method under test.
+		XBeePacket packet = packetParser.parsePacket(byteArray, OperatingMode.API);
+		
+		// Verify the result.
+		assertThat("Packet must be a Device Response Status packet", packet, is(instanceOf(DeviceResponseStatusPacket.class)));
+		assertThat("Returned length is not the expected one", packet.getPacketLength(), is(equalTo(byteData.length)));
+		// Do not use this since the data is always API and never API_ESCAPE.
+		//assertThat("Returned data array is not the expected one", packet.getPacketData(), is(equalTo(byteData)));
+		
+		assertThat("Generated API array from packet is not the expected one", packet.generateByteArray(), is(equalTo(byteArray)));
+	}
+	
+	/**
+	 * Test method for {@link com.digi.xbee.api.packet.XBeePacketParser#parsePacket(byte[], OperatingMode)}.
+	 * 
+	 * <p>A valid Frame Error API byte array must result in a valid API packet
+	 * of the right type.</p>
+	 * 
+	 * @throws InvalidPacketException 
+	 */
+	@Test
+	public final void testParsePacketFrameErrorFrame() throws InvalidPacketException {
+		// Setup the resources for the test.
+		byte[] byteData = {(byte)APIFrameType.FRAME_ERROR.getValue(), 0x02};
+		byte[] byteArray = new byte[byteData.length + 4];
+		byteArray[0] = 0x7E;
+		byteArray[1] = 0x00;
+		byteArray[2] = 0x02;
+		System.arraycopy(byteData, 0, byteArray, 3, byteData.length);
+		// Checksum.
+		byteArray[byteArray.length - 1] = (byte)0xFF;
+		// Real package: {7E 00 02 FE 02 FF};
+		
+		// Call the method under test.
+		XBeePacket packet = packetParser.parsePacket(byteArray, OperatingMode.API);
+		
+		// Verify the result.
+		assertThat("Packet must be a Frame Error packet", packet, is(instanceOf(FrameErrorPacket.class)));
 		assertThat("Returned length is not the expected one", packet.getPacketLength(), is(equalTo(byteData.length)));
 		// Do not use this since the data is always API and never API_ESCAPE.
 		//assertThat("Returned data array is not the expected one", packet.getPacketData(), is(equalTo(byteData)));

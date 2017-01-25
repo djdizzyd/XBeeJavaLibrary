@@ -1,13 +1,17 @@
 /**
- * Copyright (c) 2014-2016 Digi International Inc.,
- * All rights not expressly granted are reserved.
+ * Copyright 2017, Digi International Inc.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this file,
- * You can obtain one at http://mozilla.org/MPL/2.0/.
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Digi International Inc. 11001 Bren Road East, Minnetonka, MN 55343
- * =======================================================================
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES 
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF 
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR 
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES 
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN 
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF 
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 package com.digi.xbee.api;
 
@@ -20,8 +24,11 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import android.content.Context;
+
 import com.digi.xbee.api.connection.IConnectionInterface;
 import com.digi.xbee.api.connection.DataReader;
+import com.digi.xbee.api.connection.android.AndroidUSBPermissionListener;
 import com.digi.xbee.api.connection.serial.SerialPortParameters;
 import com.digi.xbee.api.exceptions.ATCommandException;
 import com.digi.xbee.api.exceptions.InterfaceNotOpenException;
@@ -37,8 +44,10 @@ import com.digi.xbee.api.io.IOValue;
 import com.digi.xbee.api.listeners.IExplicitDataReceiveListener;
 import com.digi.xbee.api.listeners.IIOSampleReceiveListener;
 import com.digi.xbee.api.listeners.IModemStatusReceiveListener;
+import com.digi.xbee.api.listeners.IIPDataReceiveListener;
 import com.digi.xbee.api.listeners.IPacketReceiveListener;
 import com.digi.xbee.api.listeners.IDataReceiveListener;
+import com.digi.xbee.api.listeners.ISMSReceiveListener;
 import com.digi.xbee.api.models.ATCommand;
 import com.digi.xbee.api.models.ATCommandResponse;
 import com.digi.xbee.api.models.ATCommandStatus;
@@ -160,6 +169,8 @@ public abstract class AbstractXBeeDevice {
 	 * @see #AbstractXBeeDevice(XBeeDevice, XBee64BitAddress)
 	 * @see #AbstractXBeeDevice(XBeeDevice, XBee64BitAddress, XBee16BitAddress, String)
 	 * @see #AbstractXBeeDevice(String, int, int, int, int, int)
+	 * @see #AbstractXBeeDevice(Context, int)
+	 * @see #AbstractXBeeDevice(Context, int, AndroidUSBPermissionListener)
 	 */
 	public AbstractXBeeDevice(String port, int baudRate) {
 		this(XBee.createConnectiontionInterface(port, baudRate));
@@ -188,6 +199,8 @@ public abstract class AbstractXBeeDevice {
 	 * @see #AbstractXBeeDevice(String, SerialPortParameters)
 	 * @see #AbstractXBeeDevice(XBeeDevice, XBee64BitAddress)
 	 * @see #AbstractXBeeDevice(XBeeDevice, XBee64BitAddress, XBee16BitAddress, String)
+	 * @see #AbstractXBeeDevice(Context, int)
+	 * @see #AbstractXBeeDevice(Context, int, AndroidUSBPermissionListener)
 	 */
 	public AbstractXBeeDevice(String port, int baudRate, int dataBits, int stopBits, int parity, int flowControl) {
 		this(port, new SerialPortParameters(baudRate, dataBits, stopBits, parity, flowControl));
@@ -208,10 +221,63 @@ public abstract class AbstractXBeeDevice {
 	 * @see #AbstractXBeeDevice(XBeeDevice, XBee64BitAddress)
 	 * @see #AbstractXBeeDevice(XBeeDevice, XBee64BitAddress, XBee16BitAddress, String)
 	 * @see #AbstractXBeeDevice(String, int, int, int, int, int)
+	 * @see #AbstractXBeeDevice(Context, int)
+	 * @see #AbstractXBeeDevice(Context, int, AndroidUSBPermissionListener)
 	 * @see com.digi.xbee.api.connection.serial.SerialPortParameters
 	 */
 	public AbstractXBeeDevice(String port, SerialPortParameters serialPortParameters) {
 		this(XBee.createConnectiontionInterface(port, serialPortParameters));
+	}
+	
+	/**
+	 * Class constructor. Instantiates a new {@code XBeeDevice} object for
+	 * Android with the given parameters.
+	 * 
+	 * @param context The Android context.
+	 * @param baudRate The USB connection baud rate.
+	 * 
+	 * @throws IllegalArgumentException if {@code baudRate < 1}.
+	 * @throws NullPointerException if {@code context == null}.
+	 * 
+	 * @see #AbstractXBeeDevice(IConnectionInterface)
+	 * @see #AbstractXBeeDevice(String, int)
+	 * @see #AbstractXBeeDevice(String, SerialPortParameters)
+	 * @see #AbstractXBeeDevice(XBeeDevice, XBee64BitAddress)
+	 * @see #AbstractXBeeDevice(XBeeDevice, XBee64BitAddress, XBee16BitAddress, String)
+	 * @see #AbstractXBeeDevice(String, int, int, int, int, int)
+	 * @see #AbstractXBeeDevice(Context, int, AndroidUSBPermissionListener)
+	 * 
+	 * @since 1.2.0
+	 */
+	public AbstractXBeeDevice(Context context, int baudRate) {
+		this(XBee.createConnectiontionInterface(context, baudRate));
+	}
+	
+	/**
+	 * Class constructor. Instantiates a new {@code XBeeDevice} object for
+	 * Android with the given parameters.
+	 * 
+	 * @param context The Android context.
+	 * @param baudRate The USB connection baud rate.
+	 * @param permissionListener The USB permission listener that will be 
+	 *                           notified when user grants USB permissions.
+	 * 
+	 * @throws IllegalArgumentException if {@code baudRate < 1}.
+	 * @throws NullPointerException if {@code context == null}.
+	 * 
+	 * @see #AbstractXBeeDevice(IConnectionInterface)
+	 * @see #AbstractXBeeDevice(String, int)
+	 * @see #AbstractXBeeDevice(String, SerialPortParameters)
+	 * @see #AbstractXBeeDevice(XBeeDevice, XBee64BitAddress)
+	 * @see #AbstractXBeeDevice(XBeeDevice, XBee64BitAddress, XBee16BitAddress, String)
+	 * @see #AbstractXBeeDevice(String, int, int, int, int, int)
+	 * @see #AbstractXBeeDevice(Context, int)
+	 * @see com.digi.xbee.api.connection.android.AndroidUSBPermissionListener
+	 * 
+	 * @since 1.2.0
+	 */
+	public AbstractXBeeDevice(Context context, int baudRate, AndroidUSBPermissionListener permissionListener) {
+		this(XBee.createConnectiontionInterface(context, baudRate, permissionListener));
 	}
 	
 	/**
@@ -228,6 +294,8 @@ public abstract class AbstractXBeeDevice {
 	 * @see #AbstractXBeeDevice(XBeeDevice, XBee64BitAddress)
 	 * @see #AbstractXBeeDevice(XBeeDevice, XBee64BitAddress, XBee16BitAddress, String)
 	 * @see #AbstractXBeeDevice(String, int, int, int, int, int)
+	 * @see #AbstractXBeeDevice(Context, int)
+	 * @see #AbstractXBeeDevice(Context, int, AndroidUSBPermissionListener)
 	 * @see com.digi.xbee.api.connection.IConnectionInterface
 	 */
 	public AbstractXBeeDevice(IConnectionInterface connectionInterface) {
@@ -259,6 +327,8 @@ public abstract class AbstractXBeeDevice {
 	 * @see #AbstractXBeeDevice(String, SerialPortParameters)
 	 * @see #AbstractXBeeDevice(XBeeDevice, XBee64BitAddress, XBee16BitAddress, String)
 	 * @see #AbstractXBeeDevice(String, int, int, int, int, int)
+	 * @see #AbstractXBeeDevice(Context, int)
+	 * @see #AbstractXBeeDevice(Context, int, AndroidUSBPermissionListener)
 	 * @see com.digi.xbee.api.models.XBee16BitAddress
 	 */
 	public AbstractXBeeDevice(XBeeDevice localXBeeDevice, XBee64BitAddress addr64) {
@@ -288,6 +358,8 @@ public abstract class AbstractXBeeDevice {
 	 * @see #AbstractXBeeDevice(String, SerialPortParameters)
 	 * @see #AbstractXBeeDevice(XBeeDevice, XBee64BitAddress)
 	 * @see #AbstractXBeeDevice(String, int, int, int, int, int)
+	 * @see #AbstractXBeeDevice(Context, int)
+	 * @see #AbstractXBeeDevice(Context, int, AndroidUSBPermissionListener)
 	 * @see com.digi.xbee.api.models.XBee16BitAddress
 	 * @see com.digi.xbee.api.models.XBee64BitAddress
 	 */
@@ -360,7 +432,7 @@ public abstract class AbstractXBeeDevice {
 	public void readDeviceInfo() throws TimeoutException, XBeeException {
 		byte[] response = null;
 		// Get the 64-bit address.
-		if (xbee64BitAddress == null || xbee64BitAddress == XBee64BitAddress.UNKNOWN_ADDRESS) {
+		if (xbee64BitAddress == null || xbee64BitAddress.equals(XBee64BitAddress.UNKNOWN_ADDRESS)) {
 			String addressHigh;
 			String addressLow;
 			
@@ -407,6 +479,8 @@ public abstract class AbstractXBeeDevice {
 		XBeeProtocol protocol = getXBeeProtocol();
 		if (protocol != XBeeProtocol.DIGI_MESH 
 				&& protocol != XBeeProtocol.DIGI_POINT
+				&& protocol != XBeeProtocol.XBEE_WIFI
+				&& protocol != XBeeProtocol.CELLULAR
 				&& protocol != XBeeProtocol.UNKNOWN) {
 			response = getParameter("MY");
 			xbee16BitAddress = new XBee16BitAddress(response);
@@ -553,7 +627,7 @@ public abstract class AbstractXBeeDevice {
 		
 		// Only update the 64-bit address if the original is null or unknown.
 		XBee64BitAddress addr64 = device.get64BitAddress();
-		if (addr64 != null && addr64 != XBee64BitAddress.UNKNOWN_ADDRESS
+		if (addr64 != null && !addr64.equals(XBee64BitAddress.UNKNOWN_ADDRESS)
 				&& !addr64.equals(xbee64BitAddress) 
 				&& (xbee64BitAddress == null 
 					|| xbee64BitAddress.equals(XBee64BitAddress.UNKNOWN_ADDRESS))) {
@@ -796,6 +870,105 @@ public abstract class AbstractXBeeDevice {
 		if (dataReader == null)
 			return;
 		dataReader.removeExplicitDataReceiveListener(listener);
+	}
+	
+	
+	/**
+	 * Adds the provided listener to the list of listeners to be notified
+	 * when new IP data is received. 
+	 * 
+	 * <p>If the listener has been already included this method does nothing.
+	 * </p>
+	 * 
+	 * @param listener Listener to be notified when new IP data is 
+	 *                 received.
+	 * 
+	 * @throws NullPointerException if {@code listener == null}
+	 * 
+	 * @see #removeIPDataListener(IIPDataReceiveListener)
+	 * @see com.digi.xbee.api.listeners.IIPDataReceiveListener
+	 * 
+	 * @since 1.2.0
+	 */
+	protected void addIPDataListener(IIPDataReceiveListener listener) {
+		if (listener == null)
+			throw new NullPointerException("Listener cannot be null.");
+		
+		if (dataReader == null)
+			return;
+		dataReader.addIPDataReceiveListener(listener);
+	}
+	
+	/**
+	 * Removes the provided listener from the list of IP data listeners. 
+	 * 
+	 * <p>If the listener was not in the list this method does nothing.</p>
+	 * 
+	 * @param listener Listener to be removed from the list of listeners.
+	 * 
+	 * @throws NullPointerException if {@code listener == null}
+	 * 
+	 * @see #addIPDataListener(IIPDataReceiveListener)
+	 * @see com.digi.xbee.api.listeners.IIPDataReceiveListener
+	 * 
+	 * @since 1.2.0
+	 */
+	protected void removeIPDataListener(IIPDataReceiveListener listener) {
+		if (listener == null)
+			throw new NullPointerException("Listener cannot be null.");
+		
+		if (dataReader == null)
+			return;
+		dataReader.removeIPDataReceiveListener(listener);
+	}
+	
+	
+	/**
+	 * Adds the provided listener to the list of listeners to be notified
+	 * when new SMS is received. 
+	 * 
+	 * <p>If the listener has been already included this method does nothing.
+	 * </p>
+	 * 
+	 * @param listener Listener to be notified when new SMS is received.
+	 * 
+	 * @throws NullPointerException if {@code listener == null}
+	 * 
+	 * @see #removeSMSListener(ISMSReceiveListener)
+	 * @see com.digi.xbee.api.listeners.ISMSReceiveListener
+	 * 
+	 * @since 1.2.0
+	 */
+	protected void addSMSListener(ISMSReceiveListener listener) {
+		if (listener == null)
+			throw new NullPointerException("Listener cannot be null.");
+		
+		if (dataReader == null)
+			return;
+		dataReader.addSMSReceiveListener(listener);
+	}
+	
+	/**
+	 * Removes the provided listener from the list of SMS listeners. 
+	 * 
+	 * <p>If the listener was not in the list this method does nothing.</p>
+	 * 
+	 * @param listener Listener to be removed from the list of listeners.
+	 * 
+	 * @throws NullPointerException if {@code listener == null}
+	 * 
+	 * @see #addSMSListener(ISMSReceiveListener)
+	 * @see com.digi.xbee.api.listeners.ISMSReceiveListener
+	 * 
+	 * @since 1.2.0
+	 */
+	protected void removeSMSListener(ISMSReceiveListener listener) {
+		if (listener == null)
+			throw new NullPointerException("Listener cannot be null.");
+		
+		if (dataReader == null)
+			return;
+		dataReader.removeSMSReceiveListener(listener);
 	}
 	
 	/**
